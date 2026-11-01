@@ -1,6 +1,6 @@
 ---
 name: Frontend tooling and libraries
-keywords: [node, nodejs, node.js, npm, yarn, pnpm, package.json, build tool, bundler, webpack, vite, frontend dependencies, javascript library, javascript libraries]
+keywords: [node, nodejs, node.js, npm, yarn, pnpm, package.json, build tool, bundler, vite, frontend dependencies, javascript library, javascript libraries]
 status: draft
 ---
 We don't use Node.js anywhere: no npm, no `package.json`, no bundlers or build steps.
