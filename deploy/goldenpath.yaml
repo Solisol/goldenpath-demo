@@ -1,0 +1,82 @@
+# goldenpath-api in Kubernetes: its own namespace, a Deployment, a Service and an
+# Ingress on /. The Ingress works with the Traefik controller that ships with k3s / k3d.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: idp
+  labels:
+    pod-security.kubernetes.io/enforce: restricted
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: goldenpath-api
+  namespace: idp
+  labels: &labels
+    app.kubernetes.io/name: goldenpath-api
+    app.kubernetes.io/part-of: idp
+spec:
+  replicas: 1
+  selector:
+    matchLabels: *labels
+  template:
+    metadata:
+      labels: *labels
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile: { type: RuntimeDefault }
+      containers:
+        - name: goldenpath-api
+          image: goldenpath-api:0.1.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+          readinessProbe:
+            httpGet: { path: /healthz, port: http }
+          livenessProbe:
+            httpGet: { path: /healthz, port: http }
+          resources:
+            requests: { cpu: 10m, memory: 16Mi }
+            limits: { memory: 64Mi }
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: [ALL] }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: goldenpath-api
+  namespace: idp
+  labels:
+    app.kubernetes.io/name: goldenpath-api
+    app.kubernetes.io/part-of: idp
+spec:
+  selector:
+    app.kubernetes.io/name: goldenpath-api
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: goldenpath-api
+  namespace: idp
+  labels:
+    app.kubernetes.io/name: goldenpath-api
+    app.kubernetes.io/part-of: idp
+spec:
+  rules:
+    - http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: goldenpath-api
+                port: { name: http }
